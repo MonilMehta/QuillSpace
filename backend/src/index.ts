@@ -35,11 +35,12 @@ const app = new Hono<{
   }
 }>();
 app.use('/*', cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'https://quillspaceio.vercel.app/'],
-  credentials: true,
-  allowHeaders: ['Content-Type', 'Authorization'],
-  allowMethods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'],
-  exposeHeaders: ['Content-Length', 'X-Kuma-Revision']
+  origin: ['https://quillspaceio.vercel.app'],  // Simplify to just production URL for now
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposeHeaders: ['Content-Length', 'X-Kuma-Revision'],
+  maxAge: 86400,
+  credentials: true
 }));
 
 app.get('/', async (c) => {
