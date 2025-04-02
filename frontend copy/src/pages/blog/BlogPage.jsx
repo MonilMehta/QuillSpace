@@ -28,7 +28,7 @@ const BlogPage = () => {
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8787/api/v1/blog/${id}`);
+        const res = await fetch(`https://backend.monilmeh.workers.dev/api/v1/blog/${id}`);
         if (!res.ok) {
           throw new Error("Failed to fetch post");
         }
@@ -52,7 +52,7 @@ const BlogPage = () => {
     
     const fetchComments = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8787/api/v1/blog/${id}/comments`);
+        const res = await fetch(`https://backend.monilmeh.workers.dev/api/v1/blog/${id}/comments`);
         if (!res.ok) {
           throw new Error("Failed to fetch comments");
         }
@@ -75,7 +75,7 @@ const BlogPage = () => {
     setCommentLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://127.0.0.1:8787/api/v1/blog/${id}/comment`, {
+      const res = await fetch(`https://backend.monilmeh.workers.dev/api/v1/blog/${id}/comment`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,8 +115,8 @@ const BlogPage = () => {
     try {
       const token = localStorage.getItem("token");
       const endpoint = liked ? 
-        `http://127.0.0.1:8787/api/v1/blog/${id}/unlike` : 
-        `http://127.0.0.1:8787/api/v1/blog/${id}/like`;
+        `https://backend.monilmeh.workers.dev/api/v1/blog/${id}/unlike` : 
+        `https://backend.monilmeh.workers.dev/api/v1/blog/${id}/like`;
       
       const res = await fetch(endpoint, {
         method: "POST",

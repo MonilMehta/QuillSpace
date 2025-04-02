@@ -576,6 +576,98 @@ app.get('/api/v1/user/profile', authMiddleware, async (c) => {
   }
 });
 
+// Update user profile
+app.put('/api/v1/user/update', authMiddleware, async (c) => {
+  try {
+    const prisma = new PrismaClient({
+      datasources: { db: { url: c.env.DATABASE_URL } },
+    }).$extends(withAccelerate());
+
+    const userId = c.get('jwtPayload').id;
+    const body = await c.req.json();
+    
+    // Validate the input
+    if (!body.name || !body.email) {
+      return c.json({ error: "Name and email are required" }, 400);
+    }
+    
+    // Check if email is already taken by another user
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email: body.email,
+        NOT: { id: userId }
+      }
+    });
+    
+    if (existingUser) {
+      return c.json({ error: "Email is already taken" }, 400);
+    }
+    
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: body.name,
+        email: body.email
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+    
+    return c.json(updatedUser);
+  } catch (error) {
+    console.error('Update user error:', error);
+    return c.json({ error: "Error updating profile" }, 500);
+  }
+});
+
+// Change password
+app.put('/api/v1/user/change-password', authMiddleware, async (c) => {
+  try {
+    const prisma = new PrismaClient({
+      datasources: { db: { url: c.env.DATABASE_URL } },
+    }).$extends(withAccelerate());
+
+    const userId = c.get('jwtPayload').id;
+    const body = await c.req.json();
+    
+    // Validate the input
+    if (!body.currentPassword || !body.newPassword) {
+      return c.json({ error: "Current password and new password are required" }, 400);
+    }
+    
+    // Get current user with password
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      return c.json({ error: "User not found" }, 404);
+    }
+    
+    // Check if current password is correct
+    if (user.password !== body.currentPassword) {
+      return c.json({ error: "Current password is incorrect" }, 400);
+    }
+    
+    // Update password
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: body.newPassword
+      }
+    });
+    
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Change password error:', error);
+    return c.json({ error: "Error changing password" }, 500);
+  }
+});
+
 // Add a test endpoint to verify environment variables
 app.get('/api/v1/test-env', async (c) => {
   try {

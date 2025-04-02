@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
       if (token) {
         try {
           // Fetch user profile with token
-          const response = await fetch('http://127.0.0.1:8787/api/v1/user/profile', {
+          const response = await fetch('https://backend.monilmeh.workers.dev/api/v1/user/profile', {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (email, password) => {
     try {
-      const response = await fetch('http://127.0.0.1:8787/api/v1/signin', {
+      const response = await fetch('https://backend.monilmeh.workers.dev/api/v1/signin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('token', data.token);
         
         // Fetch user profile
-        const profileResponse = await fetch('http://127.0.0.1:8787/api/v1/user/profile', {
+        const profileResponse = await fetch('https://backend.monilmeh.workers.dev/api/v1/user/profile', {
           headers: {
             Authorization: `Bearer ${data.token}`
           }
@@ -81,7 +81,7 @@ export const AuthProvider = ({ children }) => {
   // Signup function
   const signup = async (name, email, password) => {
     try {
-      const response = await fetch('http://127.0.0.1:8787/api/v1/signup', {
+      const response = await fetch('https://backend.monilmeh.workers.dev/api/v1/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,6 +111,7 @@ export const AuthProvider = ({ children }) => {
   // Logout function
   const logout = () => {
     localStorage.removeItem('token');
+
     setUser(null);
     setIsAuthenticated(false);
   };

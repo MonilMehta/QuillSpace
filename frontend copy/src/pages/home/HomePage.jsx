@@ -21,7 +21,7 @@ const HomePage = () => {
     const fetchPosts = async () => {
       try {
         // Fetch recent posts
-        const response = await fetch('http://127.0.0.1:8787/api/v1/blogs/recent');
+        const response = await fetch('https://backend.monilmeh.workers.dev/api/v1/blogs/recent');
         if (!response.ok) {
           throw new Error('Failed to fetch posts');
         }
@@ -29,7 +29,7 @@ const HomePage = () => {
         const data = await response.json();
         
         // Get all posts for the featured section
-        const allPostsResponse = await fetch('http://127.0.0.1:8787/api/v1/blogs');
+        const allPostsResponse = await fetch('https://backend.monilmeh.workers.dev/api/v1/blogs');
         if (!allPostsResponse.ok) {
           throw new Error('Failed to fetch all posts');
         }

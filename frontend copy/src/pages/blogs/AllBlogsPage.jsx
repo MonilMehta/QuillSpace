@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useAuth } from '../../context/AuthContext'; // Add this import
 
 const AllBlogsPage = () => {
   const [posts, setPosts] = useState([]);
@@ -8,6 +9,7 @@ const AllBlogsPage = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get user authentication status
   const queryParams = new URLSearchParams(location.search);
   const searchTerm = queryParams.get('search') || '';
   
@@ -25,7 +27,7 @@ const AllBlogsPage = () => {
     const fetchPosts = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('http://127.0.0.1:8787/api/v1/blogs');
+        const response = await fetch('https://backend.monilmeh.workers.dev/api/v1/blogs');
         
         if (!response.ok) {
           throw new Error('Failed to fetch posts');
@@ -75,6 +77,19 @@ const AllBlogsPage = () => {
     return readTime < 1 ? 1 : readTime;
   };
   
+  // Handle click on blog post card
+  const handlePostClick = (e, postId) => {
+    e.preventDefault();
+    
+    if (user) {
+      // User is authenticated, allow them to read the post
+      navigate(`/post/${postId}`);
+    } else {
+      // User is not authenticated, redirect to login
+      navigate(`/login?redirect=/post/${postId}`);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-10 dark:bg-gray-900">
       <motion.div
@@ -159,7 +174,11 @@ const AllBlogsPage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.05 * (index % 6) }}
               >
-                <Link to={`/post/${post.id}`} className="block">
+                <a 
+                  href={`/post/${post.id}`} 
+                  onClick={(e) => handlePostClick(e, post.id)}
+                  className="block"
+                >
                   <div className="h-48 overflow-hidden relative">
                     <img 
                       src={post.imageUrl || `https://source.unsplash.com/random/600x400?sig=${index}`} 
@@ -214,6 +233,7 @@ const AllBlogsPage = () => {
                           className="text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                           onClick={(e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             navigator.share({
                               title: post.title,
                               text: post.content?.substring(0, 100) || 'Check out this article',
@@ -225,11 +245,13 @@ const AllBlogsPage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                           </svg>
                         </button>
-                        <span className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium">Read</span>
+                        <span className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm font-medium">
+                          {user ? "Read" : "Sign in to read"}
+                        </span>
                       </div>
                     </div>
                   </div>
-                </Link>
+                </a>
               </motion.div>
             );
           })}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 
@@ -11,7 +11,9 @@ const Navbar = () => {
     (!('darkMode' in localStorage) && 
     window.matchMedia('(prefers-color-scheme: dark)').matches)
   );
+  const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Function to toggle dark mode
   const toggleDarkMode = () => {
@@ -40,6 +42,20 @@ const Navbar = () => {
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location]);
+  
+  // Handle search form submission
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/blogs?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+  
+  // Handle logout with navigation
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50">
@@ -54,6 +70,29 @@ const Navbar = () => {
                 </span>
               </Link>
             </div>
+          </div>
+
+          {/* Search Form */}
+          <div className="hidden sm:flex items-center flex-1 mx-8">
+            <form onSubmit={handleSearch} className="w-full max-w-lg">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search articles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700 dark:text-gray-200"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-0 top-0 mt-2 mr-3 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-500"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+            </form>
           </div>
 
           {/* Desktop Navigation */}
@@ -110,7 +149,7 @@ const Navbar = () => {
                         Settings
                       </Link>
                       <button
-                        onClick={logout}
+                        onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         Sign Out
@@ -186,6 +225,29 @@ const Navbar = () => {
       {/* Mobile menu, show/hide based on menu state. */}
       {isMenuOpen && (
         <div className="sm:hidden">
+          {/* Mobile Search */}
+          <div className="px-2 pt-2 pb-3">
+            <form onSubmit={handleSearch} className="w-full">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search articles..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-700 dark:text-gray-200"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-0 top-0 mt-2 mr-3 text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-500"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </div>
+            </form>
+          </div>
+          
           <div className="pt-2 pb-3 space-y-1">
             <Link to="/blogs" className="block pl-3 pr-4 py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800">
               Explore
@@ -218,7 +280,7 @@ const Navbar = () => {
                     Settings
                   </Link>
                   <button
-                    onClick={logout}
+                    onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-base font-medium text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     Sign Out

@@ -64,7 +64,7 @@ const NewPostPage = () => {
         });
       }, 500);
       
-      const res = await fetch("http://127.0.0.1:8787/api/v1/upload-image", {
+      const res = await fetch("https://backend.monilmeh.workers.dev/api/v1/upload-image", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`
@@ -124,7 +124,7 @@ const NewPostPage = () => {
     
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("http://127.0.0.1:8787/api/v1/blog", {
+      const res = await fetch("https://backend.monilmeh.workers.dev/api/v1/blog", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

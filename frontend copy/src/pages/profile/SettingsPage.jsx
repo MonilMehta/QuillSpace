@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../context/ThemeProvider";
 
 const SettingsPage = () => {
@@ -7,31 +7,116 @@ const SettingsPage = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [message, setMessage] = useState(null);
+  const [editProfileModal, setEditProfileModal] = useState(false);
+  const [changePasswordModal, setChangePasswordModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   const { theme, setTheme } = useTheme();
 
   useEffect(() => {
-    // In a real app, you would fetch the user's current email, etc.
-    // Here we'll just use placeholder data
-    setEmail("user@example.com");
+    // Fetch user profile data
+    const fetchProfile = async () => {
+      setProfileLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch("https://backend.monilmeh.workers.dev/api/v1/user/profile", {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        
+        if (!res.ok) {
+          throw new Error("Failed to fetch profile");
+        }
+        
+        const data = await res.json();
+        setEmail(data.email);
+        setName(data.name);
+      } catch (err) {
+        console.error("Error fetching profile:", err);
+        setMessage({ type: "error", text: "Could not load your profile. Please try again later." });
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    
+    fetchProfile();
   }, []);
 
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = async (e) => {
     e.preventDefault();
+    setLoading(true);
     
     if (newPassword !== confirmPassword) {
       setMessage({ type: "error", text: "New passwords do not match" });
+      setLoading(false);
       return;
     }
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://backend.monilmeh.workers.dev/api/v1/user/change-password", {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          currentPassword: password,
+          newPassword: newPassword
+        })
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to change password");
+      }
+      
       setMessage({ type: "success", text: "Password updated successfully" });
       setPassword("");
       setNewPassword("");
       setConfirmPassword("");
-    }, 1000);
+      setChangePasswordModal(false);
+    } catch (err) {
+      console.error("Error changing password:", err);
+      setMessage({ type: "error", text: "Failed to change password. Please check your current password." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://backend.monilmeh.workers.dev/api/v1/user/update", {
+        method: "PUT",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          name,
+          email
+        })
+      });
+      
+      if (!res.ok) {
+        throw new Error("Failed to update profile");
+      }
+      
+      setMessage({ type: "success", text: "Profile updated successfully" });
+      setEditProfileModal(false);
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      setMessage({ type: "error", text: "Failed to update profile. Please try again." });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubscriptionChange = () => {
@@ -47,6 +132,159 @@ const SettingsPage = () => {
       });
     }, 500);
   };
+
+  // Profile Edit Modal Component
+  const EditProfileModal = () => (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-bold mb-6 dark:text-white">Edit Profile</h2>
+        
+        <form onSubmit={handleProfileUpdate}>
+          <div className="mb-4">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setEditProfileModal(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? "Updating..." : "Save Changes"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+  
+  // Change Password Modal Component
+  const ChangePasswordModal = () => (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div 
+        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6"
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.9, opacity: 0 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-bold mb-6 dark:text-white">Change Password</h2>
+        
+        <form onSubmit={handlePasswordChange}>
+          <div className="mb-4">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              Current Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+              required
+            />
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              New Password
+            </label>
+            <input
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+              required
+              minLength={6}
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">
+              Confirm New Password
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+              required
+              minLength={6}
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setChangePasswordModal(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? "Updating..." : "Change Password"}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+
+  if (profileLoading) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <div className="w-12 h-12 border-4 border-gray-200 border-t-green-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto py-8 dark:bg-gray-900">
@@ -78,49 +316,61 @@ const SettingsPage = () => {
         {/* Left column - Account Settings */}
         <div>
           <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-8">
-            <h2 className="text-xl font-semibold mb-4 dark:text-white">Account Settings</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold dark:text-white">Account Settings</h2>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={() => setEditProfileModal(true)}
+                  className="text-sm px-3 py-1 bg-green-50 dark:bg-green-900/30 rounded-md text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                >
+                  Edit Profile
+                </button>
+                <button 
+                  onClick={() => setChangePasswordModal(true)}
+                  className="text-sm px-3 py-1 bg-green-50 dark:bg-green-900/30 rounded-md text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                >
+                  Change Password
+                </button>
+              </div>
+            </div>
             
-            <form onSubmit={handlePasswordChange}>
-              <div className="mb-4">
-                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">Current Password</label>
-                <input 
-                  type="password" 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
-                  required
-                />
+            <div className="mb-4 border-b border-gray-200 dark:border-gray-700 pb-4">
+              <div className="flex flex-col space-y-2">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Name</p>
+                  <p className="font-medium dark:text-white">{name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+                  <p className="font-medium dark:text-white">{email}</p>
+                </div>
               </div>
-              
-              <div className="mb-4">
-                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">New Password</label>
-                <input 
-                  type="password" 
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
-                  required
-                />
-              </div>
-              
-              <div className="mb-6">
-                <label className="block text-gray-700 dark:text-gray-300 text-sm font-medium mb-2">Confirm New Password</label>
-                <input 
-                  type="password" 
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
-                  required
-                />
-              </div>
-              
-              <button 
-                type="submit"
-                className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors"
-              >
-                Update Password
-              </button>
-            </form>
+            </div>
+            
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Member since</p>
+              <p className="font-medium dark:text-white">June 2023</p>
+            </div>
+          </section>
+          
+          {/* Newsletter Subscription */}
+          <section className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
+            <h3 className="text-lg font-medium mb-3 dark:text-white">Email Notifications</h3>
+            <div className="flex items-center mb-4">
+              <input 
+                type="checkbox" 
+                id="newsletter" 
+                checked={isSubscribed}
+                onChange={handleSubscriptionChange}
+                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
+              />
+              <label htmlFor="newsletter" className="ml-2 block text-gray-700 dark:text-gray-300">
+                Subscribe to newsletter
+              </label>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Get updates about new features, blog posts, and other announcements.
+            </p>
           </section>
         </div>
         
@@ -164,26 +414,6 @@ const SettingsPage = () => {
                   System
                 </button>
               </div>
-            </div>
-            
-            {/* Newsletter Subscription */}
-            <div>
-              <h3 className="text-lg font-medium mb-3 dark:text-white">Email Notifications</h3>
-              <div className="flex items-center mb-4">
-                <input 
-                  type="checkbox" 
-                  id="newsletter" 
-                  checked={isSubscribed}
-                  onChange={handleSubscriptionChange}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 dark:border-gray-600 rounded"
-                />
-                <label htmlFor="newsletter" className="ml-2 block text-gray-700 dark:text-gray-300">
-                  Subscribe to newsletter
-                </label>
-              </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Get updates about new features, blog posts, and other announcements.
-              </p>
             </div>
           </section>
           
@@ -229,6 +459,12 @@ const SettingsPage = () => {
           </section>
         </div>
       </div>
+      
+      {/* Modals */}
+      <AnimatePresence>
+        {editProfileModal && <EditProfileModal />}
+        {changePasswordModal && <ChangePasswordModal />}
+      </AnimatePresence>
     </div>
   );
 };

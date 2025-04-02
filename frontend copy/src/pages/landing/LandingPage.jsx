@@ -149,7 +149,7 @@ const LandingPage = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8787/api/v1/blogs");
+        const res = await fetch("https://backend.monilmeh.workers.dev/api/v1/blogs");
         if (!res.ok) {
           throw new Error("Failed to fetch posts");
         }
