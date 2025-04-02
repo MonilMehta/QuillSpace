@@ -11,7 +11,7 @@ const deckStyles = {
   container: {
     position: 'relative',
     width: '100%',
-    height: '400px',
+    height: '500px', // Increased from 400px
     overflow: 'visible',
     userSelect: 'none',
     margin: '0 auto',
@@ -21,9 +21,9 @@ const deckStyles = {
   },
   deck: {
     position: 'absolute',
-    width: '400px',
+    width: '500px', // Increased from 400px
     maxWidth: '100%',
-    height: '300px',
+    height: '450px', // Increased from 300px
     willChange: 'transform',
   },
   card: {
@@ -117,13 +117,13 @@ const TypewriterText = () => {
   }, [displayText, isDeleting, loopNum, typingSpeed, phrases]);
   
   return (
-    <div className="relative h-72 w-full max-w-md mx-auto rounded-xl shadow-lg overflow-hidden bg-gradient-to-br from-green-50 to-gray-100">
+    <div className="relative h-72 w-full max-w-md mx-auto rounded-xl shadow-lg overflow-hidden bg-gradient-to-br from-green-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
       <div className="absolute inset-0 flex items-center justify-center p-8">
         <div className="text-center">
           <div className="h-24 flex items-center justify-center">
-            <span className="text-2xl text-gray-700 font-medium">{displayText}</span>
+            <span className="text-2xl text-gray-700 dark:text-gray-200 font-medium">{displayText}</span>
             <motion.span 
-              className="inline-block w-0.5 h-6 bg-gray-800 ml-1" 
+              className="inline-block w-0.5 h-6 bg-gray-800 dark:bg-gray-300 ml-1" 
               animate={{ opacity: [1, 0, 1] }}
               transition={{ repeat: Infinity, duration: 1 }}
             />
@@ -131,7 +131,7 @@ const TypewriterText = () => {
         </div>
       </div>
       <div className="absolute bottom-6 left-0 right-0 text-center">
-        <span className="text-sm text-gray-500">A platform for thinkers and creators</span>
+        <span className="text-sm text-gray-500 dark:text-gray-400">A platform for thinkers and creators</span>
       </div>
     </div>
   );
@@ -191,7 +191,9 @@ const LandingPage = () => {
     api.start(i => {
       if (index !== i) return; // We're only interested in changing spring-data for the current spring
       const isGone = gone.has(index);
-      const x = isGone ? (200 + window.innerWidth) * dir : down ? mx : 0; // When a card is gone it flys out left or right, otherwise goes back to zero
+      // Limit the maximum x displacement to prevent horizontal overflow
+      const maxDisplacement = 200;
+      const x = isGone ? (maxDisplacement + window.innerWidth) * dir : down ? Math.max(Math.min(mx, maxDisplacement), -maxDisplacement) : 0;
       const rot = mx / 100 + (isGone ? dir * 10 * velocity : 0); // How much the card tilts, flicking it harder makes it rotate faster
       const scale = down ? 1.1 : 1; // Active cards lift up a bit
       return {
@@ -226,16 +228,39 @@ const LandingPage = () => {
     }
   };
 
+  // Add CSS variables for dark mode
+  useEffect(() => {
+    // Set CSS variables for cards based on dark mode
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    document.documentElement.style.setProperty('--card-bg-color', isDarkMode ? '#1f2937' : 'white');
+    
+    // Listen for dark mode changes
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isDark = document.documentElement.classList.contains('dark');
+          document.documentElement.style.setProperty('--card-bg-color', isDark ? '#1f2937' : 'white');
+        }
+      });
+    });
+    
+    observer.observe(document.documentElement, { attributes: true });
+    
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div>
+    <div className="dark:bg-gray-900 overflow-hidden"> {/* Added overflow-hidden to prevent horizontal scroll */}
 
       {/* Animated Hero Section with Typewriter Animation */}
-      <section className="py-20 bg-gradient-to-b from-white to-gray-50">
+      <section className="py-20 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between max-w-5xl mx-auto">
             <div className="md:w-1/2 mb-8 md:mb-0">
               <motion.h1 
-                className="font-serif text-5xl md:text-6xl font-extrabold tracking-tight mb-8"
+                className="font-serif text-5xl md:text-6xl font-extrabold tracking-tight mb-8 dark:text-white"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8 }}
@@ -243,7 +268,7 @@ const LandingPage = () => {
                 Where <span className="text-green-600">good ideas</span> find you
               </motion.h1>
               <motion.p 
-                className="text-xl md:text-2xl mb-10 text-gray-600"
+                className="text-xl md:text-2xl mb-10 text-gray-600 dark:text-gray-300"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.3 }}
@@ -257,7 +282,7 @@ const LandingPage = () => {
               >
                 <Link
                   to="/signup"
-                  className="px-8 py-4 bg-black rounded-full text-white font-medium text-lg hover:bg-gray-800 transition-colors transform hover:scale-105 duration-300"
+                  className="px-8 py-4 bg-black dark:bg-gray-800 rounded-full text-white font-medium text-lg hover:bg-gray-800 dark:hover:bg-gray-700 transition-colors transform hover:scale-105 duration-300"
                 >
                   Start reading
                 </Link>
@@ -278,22 +303,22 @@ const LandingPage = () => {
       </section>
 
       {/* Featured Posts with Interactive Card Deck */}
-      <section className="py-16" ref={cardsRef}>
-        <div className="container mx-auto px-4">
-          <h2 className="font-serif text-3xl font-bold mb-12 border-b pb-4">Featured Stories</h2>
+      <section className="py-16 dark:bg-gray-900 overflow-hidden" ref={cardsRef}> {/* Added overflow-hidden */}
+        <div className="container mx-auto px-4 overflow-hidden"> {/* Added overflow-hidden */}
+          <h2 className="font-serif text-3xl font-bold mb-12 border-b pb-4 dark:text-white dark:border-gray-700">Featured Stories</h2>
           
           {loading ? (
             <div className="text-center py-10">
-              <div className="w-12 h-12 border-4 border-gray-200 border-t-green-600 rounded-full animate-spin mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading stories...</p>
+              <div className="w-12 h-12 border-4 border-gray-200 dark:border-gray-700 border-t-green-600 rounded-full animate-spin mx-auto"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Loading stories...</p>
             </div>
           ) : error ? (
             <div className="text-center py-10">
-              <p className="text-red-500">{error}</p>
+              <p className="text-red-500 dark:text-red-400">{error}</p>
             </div>
           ) : featuredPosts.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-gray-600">No stories available yet.</p>
+              <p className="text-gray-600 dark:text-gray-400">No stories available yet.</p>
             </div>
           ) : (
             <div style={deckStyles.container}>
@@ -304,7 +329,9 @@ const LandingPage = () => {
                     style={{
                       ...deckStyles.card,
                       transform: interpolate([rot, scale], trans),
+                      backgroundColor: "var(--card-bg-color, white)"
                     }}
+                    className="dark:bg-gray-800 dark:text-white"
                   >
                     {/* Image Overlay */}
                     {featuredPosts[i]?.imageUrl && (
@@ -322,23 +349,23 @@ const LandingPage = () => {
                         <div className="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center">
                           {featuredPosts[i]?.author?.name?.charAt(0) || "A"}
                         </div>
-                        <span className="ml-2 text-sm font-medium">
+                        <span className="ml-2 text-sm font-medium dark:text-gray-200">
                           {featuredPosts[i]?.author?.name || "Anonymous"}
                         </span>
                       </div>
                       
-                      <h3 className="font-serif text-xl font-bold mb-3">
+                      <h3 className="font-serif text-xl font-bold mb-3 dark:text-white">
                         {featuredPosts[i]?.title}
                       </h3>
                       
-                      <p className="text-gray-600 mb-4 line-clamp-3 flex-grow">
+                      <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 flex-grow">
                         {featuredPosts[i]?.content?.substring(0, 120)}...
                       </p>
                       
                       {/* Updated to check authentication */}
                       <button 
                         onClick={(e) => handlePostClick(e, featuredPosts[i]?.id)}
-                        className="inline-block mt-auto text-green-600 hover:text-green-800 font-medium"
+                        className="inline-block mt-auto text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 font-medium"
                       >
                         Continue reading →
                       </button>
@@ -350,7 +377,7 @@ const LandingPage = () => {
           )}
           
           {/* Instructions for user */}
-          <div className="text-center mt-8 text-gray-500 text-sm">
+          <div className="text-center mt-8 text-gray-500 dark:text-gray-400 text-sm">
             <p>Swipe cards left or right to browse</p>
           </div>
           
@@ -365,7 +392,7 @@ const LandingPage = () => {
                   navigate('/signin', { state: { redirectTo: '/blogs' } });
                 }
               }}
-              className="inline-flex items-center justify-center px-6 py-3 bg-green-50 hover:bg-green-100 text-green-600 font-medium rounded-full transition-colors"
+              className="inline-flex items-center justify-center px-6 py-3 bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-600 dark:text-green-400 font-medium rounded-full transition-colors"
             >
               View all stories
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -377,13 +404,13 @@ const LandingPage = () => {
       </section>
 
       {/* Testimonial/Quote Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4 max-w-4xl">
           <blockquote className="text-center">
-            <p className="font-serif text-3xl italic mb-6">
+            <p className="font-serif text-3xl italic mb-6 dark:text-white">
               "The only thing better than reading is writing. The only thing better than writing is publishing."
             </p>
-            <footer className="text-gray-600">
+            <footer className="text-gray-600 dark:text-gray-400">
               — A Writer's Wisdom
             </footer>
           </blockquote>

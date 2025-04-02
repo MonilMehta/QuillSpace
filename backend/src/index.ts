@@ -35,7 +35,7 @@ const app = new Hono<{
   }
 }>();
 app.use('/*', cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', '*'],
   credentials: true,
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['POST', 'GET', 'PUT', 'DELETE', 'OPTIONS'],
@@ -133,90 +133,105 @@ app.post('/api/v1/signin', async (c) => {
   }
 })
 
-// Image upload endpoint - updated for Cloudinary
+// Image upload endpoint - fixed to prevent stack overflow
 app.post('/api/v1/upload-image', authMiddleware, async (c) => {
   try {
-    const formData = await c.req.formData();
-    const image = formData.get('image') as File;
+    const cloudName = c.env?.CLOUDINARY_CLOUD_NAME;
+    const apiKey = c.env?.CLOUDINARY_API_KEY;
+    const apiSecret = c.env?.CLOUDINARY_API_SECRET;
     
-    if (!image) {
-      return c.json({ error: 'No image provided' }, 400);
+    if (!cloudName || !apiKey || !apiSecret) {
+      return c.json({ error: 'Cloudinary configuration is incomplete' }, 500);
+    }
+    
+    const formData = await c.req.formData();
+    const imageFile = formData.get('image');
+    
+    if (!imageFile || !(imageFile instanceof File)) {
+      return c.json({ error: 'No image provided or invalid image format' }, 400);
     }
     
     // Check file type
     const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(image.type)) {
+    if (!validTypes.includes(imageFile.type)) {
       return c.json({ error: 'Invalid image type. Only JPEG, PNG, GIF, and WebP are supported' }, 400);
     }
     
     // Check file size (limit to 5MB)
-    if (image.size > 5 * 1024 * 1024) {
+    if (imageFile.size > 5 * 1024 * 1024) {
       return c.json({ error: 'Image too large. Maximum size is 5MB' }, 400);
     }
     
-    // Convert file to base64 for Cloudinary upload
-    const arrayBuffer = await image.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-    const dataURI = `data:${image.type};base64,${base64}`;
+    // Convert file to binary data
+    const arrayBuffer = await imageFile.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    // Convert to base64 safely without recursion
+    let binary = '';
+    const bytes = uint8Array;
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    const base64Data = btoa(binary);
+    
+    // Create data URI
+    const dataURI = `data:${imageFile.type};base64,${base64Data}`;
     
     // Prepare Cloudinary upload
-    const userId = c.get('jwtPayload').id;
     const timestamp = Math.round(new Date().getTime() / 1000);
     const folder = 'medium-blog';
     
-    // Create signature
-    const params = {
-      timestamp: timestamp.toString(),
+    // Create signature string - alphabetically ordered parameters
+    const paramsToSign = {
       folder,
-      public_id: `user_${userId}_${timestamp}`,
+      timestamp: timestamp.toString()
     };
     
-    const paramString = Object.entries(params)
-      .map(([key, value]) => `${key}=${value}`)
-      .sort()
-      .join('&');
+    // Build the string to sign
+    const entries = Object.entries(paramsToSign).sort(([keyA], [keyB]) => keyA.localeCompare(keyB));
+    const stringToSign = entries.map(([key, value]) => `${key}=${value}`).join('&') + apiSecret;
     
-    const toSign = paramString + c.env.CLOUDINARY_API_SECRET;
-    const signature = await sha1(toSign);
+    // Generate signature
+    const signature = await generateSHA1(stringToSign);
     
-    // Prepare upload form
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', dataURI);
-    uploadFormData.append('api_key', c.env.CLOUDINARY_API_KEY);
-    uploadFormData.append('timestamp', timestamp.toString());
-    uploadFormData.append('signature', signature);
-    uploadFormData.append('folder', folder);
-    uploadFormData.append('public_id', params.public_id);
+    // Create upload form data
+    const uploadData = new FormData();
+    uploadData.append('file', dataURI);
+    uploadData.append('api_key', apiKey);
+    uploadData.append('timestamp', timestamp.toString());
+    uploadData.append('folder', folder);
+    uploadData.append('signature', signature);
     
     // Upload to Cloudinary
-    const uploadResponse = await fetch(
-      `https://api.cloudinary.com/v1_1/${c.env.CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: uploadFormData
-      }
-    );
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`;
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      body: uploadData
+    });
     
     if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.json();
-      console.error('Cloudinary error:', errorData);
-      return c.json({ error: 'Failed to upload image to storage service' }, 500);
+      const errorData = await uploadResponse.text();
+      console.error('Cloudinary upload failed:', errorData);
+      return c.json({ error: 'Failed to upload image to Cloudinary', details: errorData }, 500);
     }
     
-    const result = await uploadResponse.json();
-    
+    const responseData = await uploadResponse.json();
     return c.json({ 
       success: true, 
-      imageUrl: result.secure_url 
+      imageUrl: responseData.secure_url 
     });
   } catch (error) {
     console.error('Image upload error:', error);
-    return c.json({ error: 'Error uploading image' }, 500);
+    return c.json({ 
+      error: 'Error uploading image', 
+      details: error instanceof Error ? error.message : String(error)
+    }, 500);
   }
 });
 
-// Helper function to generate SHA1 hash
-async function sha1(message: string): Promise<string> {
+// Improved SHA1 hash generation function
+async function generateSHA1(message) {
   const encoder = new TextEncoder();
   const data = encoder.encode(message);
   const hash = await crypto.subtle.digest('SHA-1', data);
@@ -561,4 +576,19 @@ app.get('/api/v1/user/profile', authMiddleware, async (c) => {
   }
 });
 
-export default app
+// Add a test endpoint to verify environment variables
+app.get('/api/v1/test-env', async (c) => {
+  try {
+    return c.json({
+      cloudinaryCloudName: c.env?.CLOUDINARY_CLOUD_NAME ? 'Available' : 'Missing',
+      cloudinaryApiKey: c.env?.CLOUDINARY_API_KEY ? 'Available' : 'Missing',
+      cloudinaryApiSecret: c.env?.CLOUDINARY_API_SECRET ? 'Available' : 'Missing',
+      databaseUrl: c.env?.DATABASE_URL ? 'Available' : 'Missing'
+    });
+  } catch (error) {
+    console.error('Error accessing environment variables:', error);
+    return c.json({ error: 'Error accessing environment variables' }, 500);
+  }
+});
+
+export default app;

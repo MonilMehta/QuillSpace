@@ -51,10 +51,6 @@ export default {
   				'5': 'hsl(var(--chart-5))'
   			}
   		},
-  		fontFamily: {
-  			sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-  			serif: ['"Roboto Serif"', 'ui-serif', 'Georgia', 'serif'],
-  		},
   		keyframes: {
   			'accordion-down': {
   				from: {

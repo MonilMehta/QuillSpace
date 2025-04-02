@@ -23,7 +23,7 @@ const SignupPage = () => {
       const result = await signup(name, email, password);
       
       if (result.success) {
-        navigate("/");
+        navigate("/home");  // Changed from "/" to "/home"
       } else {
         setError(result.error);
       }
@@ -36,7 +36,7 @@ const SignupPage = () => {
   
   return (
     <motion.div 
-      className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md"
+      className="max-w-md mx-auto mt-10 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -49,15 +49,15 @@ const SignupPage = () => {
           className="flex items-center"
         >
           <img src={logo} alt="QuillWrite Logo" className="h-8 mr-1" />
-          <span className="font-serif text-2xl font-bold text-black ml-2">Quill<span className="text-green-600">space</span></span>
+          <span className="font-serif text-2xl font-bold text-black dark:text-white ml-2">Quill<span className="text-green-600">space</span></span>
         </motion.div>
       </div>
       
-      <h2 className="font-serif text-2xl font-bold mb-6 text-center">Join Quillspace</h2>
+      <h2 className="font-serif text-2xl font-bold mb-6 text-center dark:text-white">Join Quillspace</h2>
       
       {error && (
         <motion.div 
-          className="mb-4 p-3 bg-red-50 text-red-700 rounded-md"
+          className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-md"
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
           transition={{ duration: 0.3 }}
@@ -75,7 +75,7 @@ const SignupPage = () => {
         >
           <label 
             htmlFor="name" 
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Name
           </label>
@@ -84,7 +84,7 @@ const SignupPage = () => {
             id="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
             required
           />
         </motion.div>
@@ -97,7 +97,7 @@ const SignupPage = () => {
         >
           <label 
             htmlFor="email" 
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Email
           </label>
@@ -106,7 +106,7 @@ const SignupPage = () => {
             id="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
             required
           />
         </motion.div>
@@ -119,7 +119,7 @@ const SignupPage = () => {
         >
           <label 
             htmlFor="password" 
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             Password
           </label>
@@ -128,14 +128,14 @@ const SignupPage = () => {
             id="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
             required
           />
         </motion.div>
         
         <motion.button 
           type="submit" 
-          className="w-full py-2 px-4 bg-black hover:bg-gray-800 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all"
+          className="w-full py-2 px-4 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all"
           disabled={loading}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
@@ -155,22 +155,22 @@ const SignupPage = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
       >
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-400">
           Already have an account?{" "}
-          <Link to="/login" className="text-green-600 hover:text-green-800 transition-colors">
+          <Link to="/login" className="text-green-600 hover:text-green-800 dark:text-green-500 dark:hover:text-green-400 transition-colors">
             Sign in
           </Link>
         </p>
       </motion.div>
       
       <motion.div 
-        className="mt-8 pt-6 border-t border-gray-200"
+        className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5, duration: 0.5 }}
       >
         <button 
-          className="w-full py-2 px-4 bg-white border border-gray-300 rounded-md text-gray-700 font-medium hover:bg-gray-50 flex items-center justify-center transition-colors"
+          className="w-full py-2 px-4 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-center transition-colors"
           type="button"
         >
           <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
